@@ -6,16 +6,23 @@
 local fifo       = require("fifo")
 local completion = require("completion")
 
+-- Mailbox using fifo and completion
+
 local mailbox = {} 
 local MailBox = {}
 MailBox.__index = MailBox
 
 local function new(q, e, allowed, forbidden)
+	-- Setting e to false makes this Mailbox non-blocking,
+	-- hence suitable for non-sleepable runtimes.
 	local mbox = {}
 	if type(q) == 'userdata' then
 		mbox.queue, mbox.event = q, e
 	else
-		mbox.queue, mbox.event = fifo.new(q), completion.new()
+		mbox.queue = fifo.new(q)
+		if e ~= false then
+			mbox.event = completion.new()
+		end
 	end
 	mbox[forbidden] = function () error(allowed .. "-only mailbox") end
 	return setmetatable(mbox, MailBox)
@@ -31,8 +38,11 @@ end
 
 local sizeoft = string.packsize("T")
 function MailBox:receive(timeout)
-	local ok, err = self.event:wait(timeout)
-	if not ok then error(err) end
+	-- Setting no timeout or timeout = 0 makes this function non-blocking.
+	if self.event or not timeout or timeout == 0 then
+		local ok, err = self.event:wait(timeout)
+		if not ok then error(err) end
+	end
 
 	local queue = self.queue
 	local header, header_size = queue:pop(sizeoft)
@@ -48,7 +58,7 @@ end
 
 function MailBox:send(message)
 	self.queue:push(string.pack("s", message))
-	self.event:complete()
+	if self.event then self.event:complete() end
 end
 
 return mailbox
