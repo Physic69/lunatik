@@ -2,7 +2,7 @@
 * SPDX-FileCopyrightText: (c) 2023-2024 Ring Zero Desenvolvimento de Software LTDA
 * SPDX-License-Identifier: MIT OR GPL-2.0-only
 */
-
+\
 /***
 * Kernel thread primitives.
 * This library provides support for creating and managing kernel threads from Lua.
