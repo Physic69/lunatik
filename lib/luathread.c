@@ -185,10 +185,10 @@ static int luathread_task(lua_State *L)
 * @treturn nil
 * @usage
 * local t = thread.current()
-* t:allow_signal(15)  -- Allow SIGTERM
+* t:allow(15)  -- Allow SIGTERM
 */
 
-static int luathread_allow_signal(lua_State *L)
+static int luathread_allow(lua_State *L)
 {
  	int signum = luaL_checkinteger(L, 2);
  	allow_signal(signum);
@@ -196,12 +196,13 @@ static int luathread_allow_signal(lua_State *L)
  	return 0;
 }
 
-static int luathread_send_signal(lua_State *L)
+static int luathread_send(lua_State *L)
 {
- 	int signum = luaL_checkinteger(L, 2);
-   	lunatik_object_t *object = lunatik_toobject(L, 1);
-   	luathread_t *thread = (luathread_t *)object->private;
+ 	lunatik_object_t *object = lunatik_checkobject(L, 1);
+   	int signum = luaL_checkinteger(L, 2);
     
+    	luathread_t *thread = (luathread_t *)object->private;
+   
     	if (!thread || !thread->task)
         	return luaL_error(L, "invalid thread object");
     
@@ -211,7 +212,7 @@ static int luathread_send_signal(lua_State *L)
 	return 0;
 }
 
-static int luathread_signal_pending(lua_State *L)
+static int luathread_pending(lua_State *L)
 {
 	lunatik_object_t *object = lunatik_toobject(L, 1);
  	luathread_t *thread = (luathread_t *)object->private;
@@ -236,9 +237,9 @@ static const luaL_Reg luathread_mt[] = {
 	{"__gc", lunatik_deleteobject},
 	{"stop", luathread_stop},
 	{"task", luathread_task},
-        {"allow", luathread_allow_signal},
-        {"send", luathread_send_signal},
-        {"sigpending", luathread_signal_pending},
+        {"allow", luathread_allow},
+        {"send", luathread_send},
+        {"pending", luathread_pending},
 
 	{NULL, NULL}
 };
