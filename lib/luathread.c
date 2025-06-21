@@ -198,6 +198,32 @@ static int luathread_allow(lua_State *L)
  	return 0;
 }
 
+
+/***
+ * Sends a signal to the kernel thread represented by this thread object.
+ * This function attempts to deliver the specified signal to the kernel thread associated with the given lua thread object. 
+ * @function send
+ * @tparam integer signum The signal number to send (e.g., 15).
+ * @treturn nil
+ * @raise If the thread's kernel task has exited or does not exist, or if signal delivery fails.
+ * @usage
+ * -- Assuming t is a running thread
+ * t:send(15) -- Send SIGTERM to the worker thread
+ */
+static int luathread_send_signal(lua_State *L)
+{
+    luathread_t *thread = luathread_check(L, 1);
+
+    if (!thread->task)
+        return luaL_error(L, "thread task is NULL (might have exited)");
+
+    int signum = luaL_checkinteger(L, 2);
+
+    if (send_sig(signum, thread->task, 0))
+        return luaL_error(L, "send_sig failed for signal %d", signum);
+
+    return 0;
+}
 static int luathread_send(lua_State *L)
 {
 	luathread_t *thread = luathread_check(L,1);
