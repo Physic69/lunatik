@@ -200,12 +200,13 @@ static int luathread_allow(lua_State *L)
 
 static int luathread_send(lua_State *L)
 {
-   	int signum = luaL_checkinteger(L, 2);
 	luathread_t *thread = luathread_check(L,1);
    
-    	if (!thread || !thread->task)
-        	return luaL_error(L, "invalid thread object");
-    
+    	if (!thread->task)
+        	return luaL_error(L, "thread task is NULL (might have exited)");
+
+	int signum = luaL_checkinteger(L, 2);
+
     	if (send_sig(signum, thread->task, 0))
         	return luaL_error(L, "send_sig failed for signal %d", signum);
  	
