@@ -37,6 +37,8 @@ typedef struct luathread_s {
 	lunatik_object_t *runtime;
 } luathread_t;
 
+LUNATIK_PRIVATECHECKER(luathread_check, luathread_t *);
+
 static int luathread_run(lua_State *L);
 static int luathread_current(lua_State *L);
 
@@ -198,10 +200,8 @@ static int luathread_allow(lua_State *L)
 
 static int luathread_send(lua_State *L)
 {
- 	lunatik_object_t *object = lunatik_checkobject(L, 1);
    	int signum = luaL_checkinteger(L, 2);
-    
-    	luathread_t *thread = (luathread_t *)object->private;
+	luathread_t *thread = luathread_check(L,1);
    
     	if (!thread || !thread->task)
         	return luaL_error(L, "invalid thread object");
