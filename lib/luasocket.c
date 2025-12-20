@@ -37,6 +37,7 @@
 #include <lauxlib.h>
 
 #include <lunatik.h>
+#include "luadata.h"
 
 #define luasocket_msgaddr(msg, addr, size)	\
 do {						\
@@ -147,14 +148,20 @@ static int luasocket_send(lua_State *L)
 	struct sockaddr_storage addr;
 	int nargs = lua_gettop(L);
 	int ret;
+    int ixadrr = 3;
 
 	luasocket_setmsg(msg);
 
-	vec.iov_base = (void *)luaL_checklstring(L, 2, &len);
+    if (lua_type(L, 2) == LUA_TSTRING)
+		vec.iov_base = (void *)luaL_checklstring(L, 2, &len);
+    else {
+		vec.iov_base = luadata_checkbuffer(L, 2, &len);
+		ixadrr = 5;
+    }
 	vec.iov_len = len;
 
-	if (unlikely(nargs >= 3)) {
-		size_t size = luasocket_checkaddr(L, socket, &addr, 3);
+	if (unlikely(nargs >= ixadrr)) {
+		size_t size = luasocket_checkaddr(L, socket, &addr, ixadrr);
 		luasocket_msgaddr(msg, addr, size);
 	}
 
@@ -192,25 +199,37 @@ static int luasocket_send(lua_State *L)
 static int luasocket_receive(lua_State *L)
 {
 	struct socket *socket = luasocket_check(L, 1);
-	size_t len = (size_t)luaL_checkinteger(L, 2);
+	size_t len;
 	luaL_Buffer B;
 	struct kvec vec;
 	struct msghdr msg;
 	struct sockaddr_storage addr;
-	int flags = luaL_optinteger(L, 3, 0);
-	int from = lua_toboolean(L, 4);
 	int ret;
-
+	int ixopt = 3;
 	luasocket_setmsg(msg);
 
-	vec.iov_base = (void *)luaL_buffinitsize(L, &B, len);
-	vec.iov_len = len;
+	if (lua_type(L, 2) == LUA_TSTRING) {
+		len = (size_t)luaL_checkinteger(L, 2);
+		vec.iov_base = (void *)luaL_buffinitsize(L, &B, len);
+	}
+	else {
+		vec.iov_base = luadata_checkbuffer(L, 2, &len);
+		ixopt = 5;
+	}
+	
+	vec.iov_len  = len;
+	int flags = luaL_optinteger(L, ixopt, 0);
+    int from = lua_toboolean(L, ixopt + 1);
 
 	if (unlikely(from))
 		luasocket_msgaddr(msg, addr, sizeof(addr));
 
 	lunatik_tryret(L, ret, kernel_recvmsg, socket, &msg, &vec, 1, len, flags);
-	luaL_pushresultsize(&B, ret);
+
+	if (ixopt == 5)
+		lua_pushinteger(L, ret);
+	else
+		luaL_pushresultsize(&B, ret);
 
 	return unlikely(from) ? luasocket_pushaddr(L, (struct sockaddr_storage *)msg.msg_name) + 1 : 1;
 }
