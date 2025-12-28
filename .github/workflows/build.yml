@@ -9,36 +9,21 @@ on:
     - master
 jobs:
   build:
-    name: Build ${{ matrix.kernel-version }} (${{ matrix.runner }})
+    name: Build ${{ matrix.kernel-version }}
     strategy:
       matrix:
-        include:
-          - kernel-version: 5.10
-            runner: archlinux-latest
-          - kernel-version: 5.15
-            runner: archlinux-latest
-          - kernel-version: 6.1
-            runner: ubuntu-latest
-          - kernel-version: 6.11
-            runner: ubuntu-latest
+        kernel-version: [6.11]
       fail-fast: false
-    runs-on: ${{ matrix.runner }}
-    
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v4
       with:
         submodules: recursive
-    
     - name: Install dependencies
       run: |
-        if [[ "${{ matrix.runner }}" == "archlinux-latest" ]]; then
-          pacman -Syu --noconfirm base-devel bc bison flex openssl dwarves clang llvm elfutils pkgconf libpcap lua m4 git
-        else
-          sudo apt-get update -qq
-          sudo apt-get install -yq build-essential bc bison flex libssl-dev dwarves libelf-dev libncurses-dev clang llvm pkg-config libpcap-dev lua5.4-dev m4
-        fi
-    
+        sudo apt-get update -qq
+        sudo apt-get install -yq build-essential bc bison flex libssl-dev dwarves libelf-dev libncurses-dev clang llvm pkg-config libpcap-dev lua5.4-dev m4
     - name: Setup kernel ${{ matrix.kernel-version }}
       run: |
         KERNEL_VERSION="${{ matrix.kernel-version }}"
@@ -47,22 +32,15 @@ jobs:
         tar xf linux-${KERNEL_VERSION}.tar.xz
         cd linux-${KERNEL_VERSION}
         make defconfig
-        
-        if [[ "${KERNEL_VERSION}" == 5.* ]]; then
-          echo "CONFIG_STACK_VALIDATION=n" >> .config
-          echo "CONFIG_OBJTOOL=n" >> .config
-        fi
-        
+        echo "CONFIG_STACK_VALIDATION=n" >> .config
         make modules_prepare -j$(nproc)
         echo "KERNEL_DIR=$(pwd)" >> $GITHUB_ENV
-    
     - name: Build Lunatik
       run: |
         export KERNEL_DIR="${{ env.KERNEL_DIR }}"
         make clean || true
         make -j$(nproc)
-    
     - name: Verify modules built
       run: |
         test -f lunatik.ko || test -f lib/lunatik.ko || (echo "Build failed" && exit 1)
-        echo "Lunatik built successfully for kernel ${{ matrix.kernel-version }} (${{ matrix.runner }})"
+        echo "Lunatik built successfully for kernel ${{ matrix.kernel-version }}"
