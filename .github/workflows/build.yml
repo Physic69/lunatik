@@ -7,7 +7,6 @@ on:
   push:
     branches:
     - master
-
 jobs:
   build:
     name: Build ${{ matrix.kernel-version }} (${{ matrix.runner }})
