@@ -1,0 +1,61 @@
+name: Lunatik Build CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        kernel-version: [5.15, 6.1, 6.6, 6.11]  
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git build-essential bc bison flex libssl-dev dwarves clang llvm libelf-dev pkg-config libpcap-dev m4 libncurses5-dev[web:7]
+    
+    - name: Setup kernel ${{ matrix.kernel-version }}
+      run: |
+        wget https://cdn.kernel.org/pub/linux/kernel/v${{ matrix.kernel-version[0] }}.x/linux-${{ matrix.kernel-version }}.tar.xz
+        tar xf linux-${{ matrix.kernel-version }}.tar.xz
+        cd linux-${{ matrix.kernel-version }}
+        cp /boot/config-$(uname -r) .config || true
+        make olddefconfig[web:4]
+    
+    - name: Cache kernel build
+      uses: actions/cache@v4
+      with:
+        path: linux-${{ matrix.kernel-version }}/.config
+        key: kernel-${{ matrix.kernel-version }}-${{ hashFiles('linux-${{ matrix.kernel-version }}/.config') }}
+    
+    - name: Prepare kernel headers
+      run: |
+        cd linux-${{ matrix.kernel-version }}
+        make headers_install INSTALL_HDR_PATH=/tmp/kernel-headers/usr
+        export KERNEL_DIR=$(pwd)
+        echo "KERNEL_DIR=$KERNEL_DIR" >> $GITHUB_ENV[web:3]
+    
+    - name: Build Lunatik
+      run: |
+        make KERNEL_DIR=${{ env.KERNEL_DIR }}[web:7]
+    
+    - name: Verify build artifacts
+      run: |
+        ls -la *.ko *.o || true
+        make clean
+    
+    - name: Upload build logs
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-logs-${{ matrix.kernel-version }}
+        path: |
+          *.log
+          lunatik*.ko
