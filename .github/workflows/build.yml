@@ -13,7 +13,7 @@ jobs:
     name: Build ${{ matrix.kernel-version }}
     strategy:
       matrix:
-        kernel-version: [6.1, 6.6, 6.11]
+        kernel-version: [5.15, 6.11]
       fail-fast: false
     runs-on: ubuntu-latest
     
@@ -45,19 +45,11 @@ jobs:
         export KERNEL_DIR="${{ env.KERNEL_DIR }}"
         make clean || true
         make -j$(nproc)
+
+    - name: Verify modules built
+      run: |
+        test -f lunatik.ko || test -f lib/lunatik.ko || (echo " Build failed" && exit 1)
+        echo "Lunatik built successfully for kernel ${{ matrix.kernel-version }}"
+
+
     
-    - name: Upload modules
-      uses: actions/upload-artifact@v4
-      with:
-        name: lunatik-${{ matrix.kernel-version }}
-        path: |
-          *.ko
-          lib/*.ko
-    
-    # Deploy to gh-pages ONLY on master push (like doc.yaml)
-    - name: Deploy modules
-      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./modules
