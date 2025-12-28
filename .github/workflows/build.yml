@@ -1,7 +1,9 @@
 name: Lunatik Build CI
 on:
-  push: [ master ]
-  pull_request: [ master ]
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
   build:
@@ -39,11 +41,11 @@ jobs:
         make clean || true
         make -j$(nproc) V=1
     
-    - name: Verify modules (like your Arch build)
+    - name: Verify modules
       run: |
-        echo "=== ROOT MODULES ==="
-        ls -la lunatik*.ko || echo "No root .ko"
-        echo "=== LIB MODULES ==="
-        ls -la lib/*.ko | head -10 || echo "No lib/*.ko"
-        echo "=== ALL LUNATIK ==="
-        find . -name "*lunatik*" -type f | xargs ls -la || echo "No lunatik files"
+        echo "=== ROOT ==="
+        ls -la lunatik*.ko || echo "-"
+        echo "=== LIB/ ==="
+        ls lib/*.ko 2>/dev/null | head -5 || echo "-"
+        echo "=== ALL .ko ==="
+        find . -name "*.ko" | head -5 || echo "No .ko files"
