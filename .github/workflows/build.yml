@@ -7,7 +7,7 @@ jobs:
   build:
     strategy:
       matrix:
-        kernel-version: [6.1]
+        kernel-version: [6.1, 6.6]
       fail-fast: false
     runs-on: ubuntu-24.04
     
@@ -17,32 +17,33 @@ jobs:
         submodules: recursive
     
     - name: Install deps
-      run: sudo apt-get update -qq && sudo apt-get install -yq build-essential bc bison flex libssl-dev dwarves libelf-dev libncurses-dev clang llvm pkg-config libpcap-dev lua5.4-dev m4
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -yq build-essential bc bison flex libssl-dev dwarves libelf-dev libncurses-dev clang llvm pkg-config libpcap-dev lua5.4-dev m4
     
     - name: Setup kernel ${{ matrix.kernel-version }}
       run: |
         KERNEL_VERSION="${{ matrix.kernel-version }}"
         MAJOR=$(echo $KERNEL_VERSION | cut -c1)
         wget -q "https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${KERNEL_VERSION}.tar.xz"
-        tar xf "linux-${KERNEL_VERSION}.tar.xz"
-        cd "linux-${KERNEL_VERSION}"
+        tar xf linux-${KERNEL_VERSION}.tar.xz
+        cd linux-${KERNEL_VERSION}
         make defconfig
         echo "CONFIG_STACK_VALIDATION=n" >> .config
         make modules_prepare -j$(nproc)
         echo "KERNEL_DIR=$(pwd)" >> $GITHUB_ENV
     
-    - name: Debug Lunatik build
-      run: |
-        echo "KERNEL_DIR=${{ env.KERNEL_DIR }}"
-        cat Makefile | grep -i "^all:" -A5 || true
-        ls -la Makefile lua/ | head -10
-    
     - name: Build Lunatik
       run: |
         export KERNEL_DIR="${{ env.KERNEL_DIR }}"
         make clean || true
-        make V=1
+        make -j$(nproc) V=1
     
-    - name: Find modules
+    - name: Verify modules (like your Arch build)
       run: |
-        find . -name "*.ko" -o -name "*lunatik*" | xargs ls -la || echo "❌ No modules built"
+        echo "=== ROOT MODULES ==="
+        ls -la lunatik*.ko || echo "No root .ko"
+        echo "=== LIB MODULES ==="
+        ls -la lib/*.ko | head -10 || echo "No lib/*.ko"
+        echo "=== ALL LUNATIK ==="
+        find . -name "*lunatik*" -type f | xargs ls -la || echo "No lunatik files"
