@@ -23,12 +23,12 @@ do {						\
 		mutex_op(&(o)->mutex);		\
 	else					\
 		spin_op(&(o)->spin);		\
-} while(0)
+} while (0)
 
 #define lunatik_newlock(o)	lunatik_locker((o), mutex_init, spin_lock_init);
 #define lunatik_freelock(o)	lunatik_locker((o), mutex_destroy, (void));
-#define lunatik_lock(o)		lunatik_locker((o), mutex_lock, spin_lock_bh)
-#define lunatik_unlock(o)	lunatik_locker((o), mutex_unlock, spin_unlock_bh)
+#define lunatik_lock(o)		lunatik_locker((o), mutex_lock, spin_lock)
+#define lunatik_unlock(o)	lunatik_locker((o), mutex_unlock, spin_unlock)
 
 #define lunatik_toruntime(L)	(*(lunatik_object_t **)lua_getextraspace(L))
 
@@ -50,17 +50,37 @@ do {							\
 	int n = lua_gettop(L);				\
 	ret = handler(L, ## __VA_ARGS__);		\
 	lua_settop(L, n);				\
-} while(0)
+} while (0)
 
-#define lunatik_run(runtime, handler, ret, ...)				\
+#define lunatik_runner(runtime, handler, ret, ...)			\
 do {									\
-	lunatik_lock(runtime);						\
 	if (unlikely(!lunatik_getstate(runtime)))			\
 		ret = -ENXIO;						\
 	else								\
 		lunatik_handle(runtime, handler, ret, ## __VA_ARGS__);	\
-	lunatik_unlock(runtime);					\
-} while(0)
+} while (0)
+
+#define lunatik_run(runtime, handler, ret, ...)			\
+do {								\
+	lunatik_lock(runtime);					\
+	lunatik_runner(runtime, handler, ret, ## __VA_ARGS__);	\
+	lunatik_unlock(runtime);				\
+} while (0)
+
+#define lunatik_runbh(runtime, handler, ret, ...)		\
+do {								\
+	spin_lock_bh(&runtime->spin);				\
+	lunatik_runner(runtime, handler, ret, ## __VA_ARGS__);	\
+	spin_unlock_bh(&runtime->spin);				\
+} while (0)
+
+#define lunatik_runirq(runtime, handler, ret, ...)		\
+do {								\
+	unsigned long flags;					\
+	spin_lock_irqsave(&runtime->spin, flags);		\
+	lunatik_runner(runtime, handler, ret, ## __VA_ARGS__);	\
+	spin_unlock_irqrestore(&runtime->spin, flags);		\
+} while (0)
 
 typedef struct lunatik_reg_s {
 	const char *name;
@@ -96,11 +116,16 @@ extern lunatik_object_t *lunatik_env;
 
 static inline int lunatik_trylock(lunatik_object_t *object)
 {
-	return object->sleep ? mutex_trylock(&object->mutex) : spin_trylock_bh(&object->spin);
+	return object->sleep ? mutex_trylock(&object->mutex) : spin_trylock(&object->spin);
 }
 
 int lunatik_runtime(lunatik_object_t **pruntime, const char *script, bool sleep);
 int lunatik_stop(lunatik_object_t *runtime);
+
+static inline int lunatik_nop(lua_State *L)
+{
+	return 0;
+}
 
 static inline void *lunatik_realloc(lua_State *L, void *ptr, size_t size)
 {
@@ -326,6 +351,14 @@ do {									\
 	priv->field = lua_isnil(L, -1) ? opt : lua_tointeger(L, -1);	\
 	lua_pop(L, 1);							\
 } while (0)
+
+static inline void lunatik_optcfunction(lua_State *L, int idx, const char *field, lua_CFunction default_func)
+{
+	if (lua_getfield(L, idx, field) != LUA_TFUNCTION) {
+		lua_pop(L, 1);
+		lua_pushcfunction(L, default_func);
+	}
+}
 
 #define lunatik_checkbounds(L, idx, val, min, max)	luaL_argcheck(L, val >= min && val <= max, idx, "out of bounds")
 
