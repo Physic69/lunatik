@@ -10,12 +10,20 @@ on:
 
 jobs:
   build:
-    name: Build ${{ matrix.kernel-version }}
+    name: Build ${{ matrix.kernel-version }} (${{ matrix.runner }})
     strategy:
       matrix:
-        kernel-version: [5.10, 6.11]
+        include:
+          - kernel-version: 5.10
+            runner: archlinux-latest
+          - kernel-version: 5.15
+            runner: archlinux-latest
+          - kernel-version: 6.1
+            runner: ubuntu-latest
+          - kernel-version: 6.11
+            runner: ubuntu-latest
       fail-fast: false
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     
     steps:
     - name: Checkout
@@ -25,8 +33,12 @@ jobs:
     
     - name: Install dependencies
       run: |
-        sudo apt-get update -qq
-        sudo apt-get install -yq build-essential bc bison flex libssl-dev dwarves libelf-dev libncurses-dev clang llvm pkg-config libpcap-dev lua5.4-dev m4
+        if [[ "${{ matrix.runner }}" == "archlinux-latest" ]]; then
+          pacman -Syu --noconfirm base-devel bc bison flex openssl dwarves clang llvm elfutils pkgconf libpcap lua m4 git
+        else
+          sudo apt-get update -qq
+          sudo apt-get install -yq build-essential bc bison flex libssl-dev dwarves libelf-dev libncurses-dev clang llvm pkg-config libpcap-dev lua5.4-dev m4
+        fi
     
     - name: Setup kernel ${{ matrix.kernel-version }}
       run: |
@@ -37,7 +49,6 @@ jobs:
         cd linux-${KERNEL_VERSION}
         make defconfig
         
-        # Fix 5.x objtool issues
         if [[ "${KERNEL_VERSION}" == 5.* ]]; then
           echo "CONFIG_STACK_VALIDATION=n" >> .config
           echo "CONFIG_OBJTOOL=n" >> .config
@@ -51,11 +62,8 @@ jobs:
         export KERNEL_DIR="${{ env.KERNEL_DIR }}"
         make clean || true
         make -j$(nproc)
-
+    
     - name: Verify modules built
       run: |
-        test -f lunatik.ko || test -f lib/lunatik.ko || (echo " Build failed" && exit 1)
-        echo "Lunatik built successfully for kernel ${{ matrix.kernel-version }}"
-
-
-    
+        test -f lunatik.ko || test -f lib/lunatik.ko || (echo "Build failed" && exit 1)
+        echo "Lunatik built successfully for kernel ${{ matrix.kernel-version }} (${{ matrix.runner }})"
