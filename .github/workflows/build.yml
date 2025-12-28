@@ -26,12 +26,9 @@ jobs:
           lua5.4-dev m4
     
     - name: Setup kernel ${{ matrix.kernel-version }}
-      run: |
-        wget -q https://cdn.kernel.org/pub/linux/kernel/v${{ matrix.kernel-version[0] }}.x/linux-${{ matrix.kernel-version }}.tar.xz
-        tar xf linux-${{ matrix.kernel-version }}.tar.xz
-        cd linux-${{ matrix.kernel-version }}
-        make defconfig
-        make modules_prepare -j$(nproc)
+      uses: actions-runner/linux-kernel-build-action@v1
+      with:
+        kernel-version: ${{ matrix.kernel-version }}
     
     - name: Build Lunatik
       run: |
