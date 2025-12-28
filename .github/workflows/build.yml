@@ -19,18 +19,15 @@ jobs:
     - name: Install deps
       run: |
         sudo apt-get update -qq
-        sudo apt-get install -yq \
-          build-essential bc bison flex libssl-dev dwarves \
-          libelf-dev libncurses-dev clang llvm pkg-config \
-          libpcap-dev lua5.4-dev m4
+        sudo apt-get install -yq build-essential bc bison flex libssl-dev dwarves libelf-dev libncurses-dev clang llvm pkg-config libpcap-dev lua5.4-dev m4
     
     - name: Setup kernel ${{ matrix.kernel-version }}
       run: |
-        MAJOR="${{ matrix.kernel-version[0] }}"
-        FULL="${{ matrix.kernel-version }}"
-        wget -q "https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${FULL}.tar.xz"
-        tar xf "linux-${FULL}.tar.xz"
-        cd "linux-${FULL}"
+        KERNEL_VERSION="${{ matrix.kernel-version }}"
+        MAJOR=$(echo $KERNEL_VERSION | cut -c1)
+        wget -q "https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${KERNEL_VERSION}.tar.xz"
+        tar xf "linux-${KERNEL_VERSION}.tar.xz"
+        cd "linux-${KERNEL_VERSION}"
         make defconfig
         make modules_prepare -j$(nproc)
         echo "KERNEL_DIR=$(pwd)" >> $GITHUB_ENV
