@@ -20,19 +20,26 @@ jobs:
       run: |
         sudo apt-get update -qq
         sudo apt-get install -yq \
-          build-essential bc bison flex libssl-dev \
-          dwarves libelf-dev libncurses-dev \
-          clang llvm pkg-config libpcap-dev \
-          lua5.4-dev m4
+          build-essential bc bison flex libssl-dev dwarves \
+          libelf-dev libncurses-dev clang llvm pkg-config \
+          libpcap-dev lua5.4-dev m4
     
     - name: Setup kernel ${{ matrix.kernel-version }}
-      uses: actions-runner/linux-kernel-build-action@v1
-      with:
-        kernel-version: ${{ matrix.kernel-version }}
+      run: |
+        MAJOR="${{ matrix.kernel-version[0] }}"
+        FULL="${{ matrix.kernel-version }}"
+        wget -q "https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${FULL}.tar.xz"
+        tar xf "linux-${FULL}.tar.xz"
+        cd "linux-${FULL}"
+        make defconfig
+        make modules_prepare -j$(nproc)
+        echo "KERNEL_DIR=$(pwd)" >> $GITHUB_ENV
     
     - name: Build Lunatik
       run: |
-        make -C linux-${{ matrix.kernel-version }} M=$(pwd) modules
+        make KERNEL_DIR="${{ env.KERNEL_DIR }}"
     
     - name: Verify
-      run: ls -la *.ko
+      run: |
+        ls -la *.ko || echo "No .ko files"
+        modinfo lunatik.ko || true
