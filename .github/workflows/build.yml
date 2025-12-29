@@ -31,13 +31,19 @@ jobs:
         wget -q "https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${KERNEL_VERSION}.tar.xz"
         tar xf linux-${KERNEL_VERSION}.tar.xz
         cd linux-${KERNEL_VERSION}
-        make mrproper                    # ← ADD THIS
-        make defconfig
-        echo "CONFIG_STACK_VALIDATION=n" >> .config
         
+        make mrproper
+        make defconfig
+        
+        echo "CONFIG_STACK_VALIDATION=n" >> .config
+        echo "CONFIG_WERROR=n" >> .config
+
         if [[ "$KERNEL_VERSION" == "5."* ]]; then
-          sed -i 's/-Werror/&=no-use-after-free/' tools/objtool/Makefile || true
-          sed -i 's/CFLAGS_objtool.*-Werror.*/CFLAGS_objtool := -Wall/' tools/objtool/Makefile || true
+          sed -i 's/-Werror//g' tools/objtool/Makefile
+          
+          sed -i 's/-Werror//g' tools/lib/subcmd/Makefile
+          
+          export HOSTCFLAGS="-Wno-error=deprecated-declarations -Wno-error=use-after-free"
         fi
 
         make modules_prepare -j$(nproc)
