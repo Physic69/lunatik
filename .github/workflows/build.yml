@@ -35,9 +35,9 @@ jobs:
         make defconfig
         echo "CONFIG_STACK_VALIDATION=n" >> .config
         
-        # Fix 5.15 objtool Werror ← ADD THIS
         if [[ "$KERNEL_VERSION" == "5."* ]]; then
-          sed -i 's/CFLAGS_objtool := -Wall -Werror/CFLAGS_objtool := -Wall/' tools/objtool/Makefile
+          echo "CONFIG_STACK_VALIDATION=n" >> .config
+          echo "CONFIG_OBJTOOL=n" >> .config
         fi
         
         make modules_prepare -j$(nproc)
