@@ -36,10 +36,10 @@ jobs:
         echo "CONFIG_STACK_VALIDATION=n" >> .config
         
         if [[ "$KERNEL_VERSION" == "5."* ]]; then
-          echo "CONFIG_STACK_VALIDATION=n" >> .config
-          echo "CONFIG_OBJTOOL=n" >> .config
+          sed -i 's/-Werror/&=no-use-after-free/' tools/objtool/Makefile || true
+          sed -i 's/CFLAGS_objtool.*-Werror.*/CFLAGS_objtool := -Wall/' tools/objtool/Makefile || true
         fi
-        
+
         make modules_prepare -j$(nproc)
         echo "KERNEL_DIR=$(pwd)" >> $GITHUB_ENV
 
