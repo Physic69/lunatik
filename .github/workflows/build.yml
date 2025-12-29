@@ -42,5 +42,5 @@ jobs:
         make -j$(nproc)
     - name: Verify modules built
       run: |
-        test -f lunatik.ko && (echo "Build failed" && exit 1)
+        test -f lunatik.ko || (echo "Build failed" && exit 1)
         echo "Lunatik built successfully for kernel ${{ matrix.kernel-version }}"
