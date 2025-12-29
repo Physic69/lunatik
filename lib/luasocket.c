@@ -24,9 +24,7 @@
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 #include <linux/module.h>
 #include <linux/version.h>
-#include <linux/string.h>
-#include <linux/net.h>
-#include <linux/un.h>
+
 #include <net/sock.h>
 #if (LINUX_VERSION_CODE <= KERNEL_VERSION(6, 1, 0))
 #include <linux/l2tp.h>
