@@ -44,3 +44,16 @@ jobs:
       run: |
         test -f lunatik.ko || test -f lib/lunatik.ko || (echo "Build failed" && exit 1)
         echo "Lunatik built successfully for kernel ${{ matrix.kernel-version }}"
+    - name: Test module install + load
+      run: |
+        echo "Full install + modprobe test for kernel ${{ matrix.kernel-version }}..."
+        # 1. Install like users do
+        make modules_install INSTALL_MOD_PATH=$(pwd)/moddir
+        sudo depmod -a -b $(pwd)/moddir
+        # 2. Test modprobe (real user flow)
+        sudo modprobe lunatik || (echo "modprobe lunatik failed!" && exit 1)
+        lsmod | grep lunatik || (echo "lunatik not loaded!" && exit 1)
+        
+        # 3. Cleanup
+        sudo modprobe -r lunatik || true
+        echo "Full install & modprobe cycle successful for kernel ${{ matrix.kernel-version }}!"
