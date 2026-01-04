@@ -27,7 +27,7 @@ jobs:
     - name: Setup kernel ${{ matrix.kernel-version }}
       run: |
         KERNEL_VERSION="${{ matrix.kernel-version }}"
-        MAJOR=$(echo $KERNEL_VERSION | cut -c1)
+        MAJOR=$(echo $KERNEL_VERSION | cut -d. -f1)
         wget -q "https://cdn.kernel.org/pub/linux/kernel/v${MAJOR}.x/linux-${KERNEL_VERSION}.tar.xz"
         tar xf linux-${KERNEL_VERSION}.tar.xz
         cd linux-${KERNEL_VERSION}
@@ -49,5 +49,5 @@ jobs:
         make -j$(nproc)
     - name: Verify modules built
       run: |
-        test -f lunatik.ko || (echo "Build failed" && exit 1)
+        test -f lunatik.ko || { echo "Build failed" ; exit 1; }
         echo "Lunatik built successfully for kernel ${{ matrix.kernel-version }}"
