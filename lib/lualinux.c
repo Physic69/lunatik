@@ -24,7 +24,7 @@
 #include <lauxlib.h>
 
 #include <lunatik.h>
-
+extern int luaopen_math(lua_State *L);
 /***
 * Generates pseudo-random integers.
 * Mimics the behavior of Lua's `math.random` but uses kernel's random number
@@ -46,34 +46,33 @@
 /* based on math_random() @ lua/lmathlib.c */
 static int lualinux_random(lua_State *L)
 {
-	lua_Integer low, up, rand;
-
-	switch (lua_gettop(L)) {  /* check number of arguments */
-	case 0: {  /* no arguments */
-		lua_pushinteger(L, (lua_Integer)get_random_u64());
-		return 1;
-	}
-	case 1: {  /* only upper limit */
-		low = 1;
-		up = luaL_checkinteger(L, 1);
-		break;
-	}
-	case 2: {  /* lower and upper limits */
-		low = luaL_checkinteger(L, 1);
-		up = luaL_checkinteger(L, 2);
-		break;
-	}
-	default:
-		return luaL_error(L, "wrong number of arguments");
-	}
-
-	/* random integer in the interval [low, up] */
-	luaL_argcheck(L, low <= up, 1, "interval is empty");
-	luaL_argcheck(L, low >= 0 || up <= LUA_MAXINTEGER + low, 1, "interval too large");
-
-	rand = low + ((lua_Integer)get_random_u64()) % (up - low + 1);
-	lua_pushinteger(L, rand);
-	return 1;
+    int nargs = lua_gettop(L);  /* Save number of arguments */
+    
+    /* Get math table, load if needed */
+    lua_getglobal(L, "math");
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+        luaL_requiref(L, "math", luaopen_math, 1);
+    }
+    
+    /* Get math.random function */
+    lua_getfield(L, -1, "random");
+    
+    /* Move arguments after the function */
+    if (nargs >= 1) {
+        lua_pushvalue(L, 1);  /* Copy first argument */
+    }
+    if (nargs >= 2) {
+        lua_pushvalue(L, 2);  /* Copy second argument */
+    }
+    
+    /* Call math.random with the arguments */
+    if (lua_pcall(L, nargs, 1, 0) != LUA_OK) {
+        return luaL_error(L, "math.random failed: %s", lua_tostring(L, -1));
+    }
+    
+    /* Result is on top of stack, return it */
+    return 1;
 }
 
 /***
