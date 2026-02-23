@@ -40,6 +40,7 @@
 
 <h2>Modules</h2>
 <ul class="nowrap">
+  <li><a href="../modules/byteorder.html">byteorder</a></li>
   <li><a href="../modules/completion.html">completion</a></li>
   <li><a href="../modules/cpu.html">cpu</a></li>
   <li><a href="../modules/crypto.aead.html">crypto.aead</a></li>
@@ -61,8 +62,10 @@
   <li><a href="../modules/notifier.html">notifier</a></li>
   <li><a href="../modules/probe.html">probe</a></li>
   <li><a href="../modules/rcu.html">rcu</a></li>
+  <li><a href="../modules/signal.html">signal</a></li>
   <li><a href="../modules/socket.html">socket</a></li>
   <li><a href="../modules/socket.inet.html">socket.inet</a></li>
+  <li><a href="../modules/socket.raw.html">socket.raw</a></li>
   <li><a href="../modules/socket.unix.html">socket.unix</a></li>
   <li><a href="../modules/syscall.html">syscall</a></li>
   <li><a href="../modules/syscall.table.html">syscall.table</a></li>
@@ -105,6 +108,10 @@
 	<td class="summary">Returns the content of the data object as a Lua string.</td>
 	</tr>
 	<tr>
+	<td class="name" nowrap><a href="#data:checksum">data:checksum ([offset[, length]])</a></td>
+	<td class="summary">Perform a raw checksum on a given buffer.</td>
+	</tr>
+	<tr>
 	<td class="name" nowrap><a href="#data:getbyte">data:getbyte (offset)</a></td>
 	<td class="summary">Extracts an unsigned 8-bit integer (a byte) from the data object.</td>
 	</tr>
@@ -126,7 +133,7 @@
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#data:getnumber">data:getnumber (offset)</a></td>
-	<td class="summary">Extracts a Lua integer (platform-dependent: 64-bit on LP64, 32-bit otherwise) from the data object.</td>
+	<td class="summary">Extracts a Lua integer from the data object.</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#data:getstring">data:getstring (offset[, length])</a></td>
@@ -170,7 +177,7 @@
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#data:setnumber">data:setnumber (offset, value)</a></td>
-	<td class="summary">Inserts a Lua integer (platform-dependent: 64-bit on LP64, 32-bit otherwise) into the data object.</td>
+	<td class="summary">Inserts a Lua integer into the data object.</td>
 	</tr>
 	<tr>
 	<td class="name" nowrap><a href="#data:setstring">data:setstring (offset, s)</a></td>
@@ -310,6 +317,35 @@
 
 </dd>
     <dt>
+    <a name = "data:checksum"></a>
+    <strong>data:checksum ([offset[, length]])</strong>
+    </dt>
+    <dd>
+    Perform a raw checksum on a given buffer.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">offset</span>
+            <span class="types"><span class="type">integer</span></span>
+        , from where to checksum
+         (<em>optional</em>)
+        </li>
+        <li><span class="parameter">length</span>
+            <span class="types"><span class="type">integer</span></span>
+        , total length checksum
+         (<em>optional</em>)
+        </li>
+    </ul>
+
+
+    <h3>Raises:</h3>
+    Error if the write operation (offset + length of data).
+
+
+
+</dd>
+    <dt>
     <a name = "data:getbyte"></a>
     <strong>data:getbyte (offset)</strong>
     </dt>
@@ -349,7 +385,7 @@
     </dt>
     <dd>
     Extracts a signed 16-bit integer from the data object.
- Assumes host byte order. For specific byte orders, use <a href="../modules/linux.html#be16toh">linux.be16toh</a> etc. on the result.
+ Assumes host byte order. For specific byte orders, use <code>linux.be16toh</code> etc. on the result.
 
 
     <h3>Parameters:</h3>
@@ -467,8 +503,8 @@
     <strong>data:getnumber (offset)</strong>
     </dt>
     <dd>
-    Extracts a Lua integer (platform-dependent: 64-bit on LP64, 32-bit otherwise) from the data object.
- Alias for <a href="../modules/data.html#data:getint64">getint64</a> on LP64 systems, <a href="../modules/data.html#data:getint32">getint32</a> otherwise. Assumes host byte order.
+    Extracts a Lua integer from the data object.
+ Alias for <a href="../modules/data.html#data:getint64">getint64</a>. Assumes host byte order.
 
 
     <h3>Parameters:</h3>
@@ -678,7 +714,7 @@
     </dt>
     <dd>
     Inserts a signed 16-bit integer into the data object.
- Assumes host byte order. For specific byte orders, use <a href="../modules/linux.html#htobe16">linux.htobe16</a> etc. on the value before setting.
+ Assumes host byte order. For specific byte orders, use <code>linux.htobe16</code> etc. on the value before setting.
 
 
     <h3>Parameters:</h3>
@@ -788,8 +824,8 @@
     <strong>data:setnumber (offset, value)</strong>
     </dt>
     <dd>
-    Inserts a Lua integer (platform-dependent: 64-bit on LP64, 32-bit otherwise) into the data object.
- Alias for <a href="../modules/data.html#data:setint64">setint64</a> on LP64 systems, <a href="../modules/data.html#data:setint32">setint32</a> otherwise. Assumes host byte order.
+    Inserts a Lua integer into the data object.
+ Alias for <a href="../modules/data.html#data:setint64">setint64</a>. Assumes host byte order.
 
 
     <h3>Parameters:</h3>
@@ -961,7 +997,7 @@
 </div> <!-- id="main" -->
 <div id="about">
 <i>generated by <a href="http://github.com/lunarmodules/LDoc">LDoc 1.5.0</a></i>
-<i style="float:right;">Last updated 2026-01-04 20:27:39 </i>
+<i style="float:right;">Last updated 2026-02-23 13:30:29 </i>
 </div> <!-- id="about" -->
 </div> <!-- id="container" -->
 </body>
