@@ -1,5 +1,5 @@
 /*
-* SPDX-FileCopyrightText: (c) 2024-2025 Mohammad Shehar Yaar Tausif <sheharyaar48@gmail.com>
+* SPDX-FileCopyrightText: (c) 2024-2026 Mohammad Shehar Yaar Tausif <sheharyaar48@gmail.com>
 * SPDX-License-Identifier: MIT OR GPL-2.0-only
 */
 
@@ -17,13 +17,9 @@
 */
 
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-#include <linux/module.h>
-#include <linux/version.h>
 #include <linux/types.h>
 #include <linux/netfilter/x_tables.h>
 
-#include <lua.h>
-#include <lauxlib.h>
 #include <lunatik.h>
 
 #include "luadata.h"
@@ -65,15 +61,16 @@ static struct {
 static int luaxtable_docall(lua_State *L, luaxtable_t *xtable, luaxtable_info_t *info, const char *op, int nargs, int nret)
 {
 	int base = lua_gettop(L) - nargs;
+	int ret = -1;
 
 	if (lunatik_getregistry(L, xtable) != LUA_TTABLE) {
 		pr_err("%s: could not find ops table\n", op);
-		goto err;
+		goto clear;
 	}
 
 	if (lua_getfield(L, -1, op) != LUA_TFUNCTION) {
 		pr_err("%s isn't defined\n", op);
-		goto err;
+		goto clear;
 	}
 
 	lua_insert(L, base + 1); /* op */
@@ -82,11 +79,12 @@ static int luaxtable_docall(lua_State *L, luaxtable_t *xtable, luaxtable_info_t 
 
 	if (lua_pcall(L, nargs + 1, nret, 0) != LUA_OK) {
 		pr_err("%s error: %s\n", op, lua_tostring(L, -1));
-		goto err;
+		goto clear;
 	}
-	return 0;
-err:
-	return -1;
+	ret = 0;
+clear:
+	luadata_clear(xtable->skb);
+	return ret;
 }
 
 static inline lunatik_object_t *luaxtable_getskb(lua_State *L, luaxtable_t *xtable)
@@ -104,7 +102,7 @@ static int luaxtable_pushparams(lua_State *L, const struct xt_action_param *par,
 		pr_err("could not get skb\n");
 		return -1;
 	}
-        luadata_reset(data, skb->data, skb->len, opt);
+	luadata_reset(data, skb->data, 0, skb->len, opt);
 
 	lua_newtable(L);
 	lua_pushboolean(L, par->hotdrop);
@@ -113,11 +111,7 @@ static int luaxtable_pushparams(lua_State *L, const struct xt_action_param *par,
 	lua_setfield(L, -2, "thoff");
 	lua_pushinteger(L, par->fragoff);
 	lua_setfield(L, -2, "fragoff");
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0))
 	lua_pushinteger(L, xt_hooknum(par));
-#else
-	lua_pushinteger(L, par->hooknum);
-#endif
 	lua_setfield(L, -2, "hooknum");
 	lua_pushvalue(L, -1); /* param table */
 	lua_insert(L, lua_gettop(L) - 2); /* stack: (...), param, skb, param */
@@ -129,7 +123,7 @@ static int luaxtable_pushparams(lua_State *L, const struct xt_action_param *par,
 
 static int luaxtable_domatch(lua_State *L, luaxtable_t *xtable, const struct sk_buff *skb, struct xt_action_param *par, int fallback)
 {
-	if (luaxtable_call(L, "match", xtable, (struct sk_buff *)skb, par, (luaxtable_info_t *)par->matchinfo, LUADATA_OPT_READONLY | LUADATA_OPT_SKB) != 0)
+	if (luaxtable_call(L, "match", xtable, (struct sk_buff *)skb, par, (luaxtable_info_t *)par->matchinfo, LUADATA_OPT_READONLY) != 0)
 		return fallback;
 
 	int ret = lua_toboolean(L, -1);
@@ -140,7 +134,7 @@ static int luaxtable_domatch(lua_State *L, luaxtable_t *xtable, const struct sk_
 
 static int luaxtable_dotarget(lua_State *L, luaxtable_t *xtable, struct sk_buff *skb, const struct xt_action_param *par, int fallback)
 {
-	if (luaxtable_call(L, "target", xtable, skb, par, (luaxtable_info_t *)par->targinfo, LUADATA_OPT_SKB) != 0)
+	if (luaxtable_call(L, "target", xtable, skb, par, (luaxtable_info_t *)par->targinfo, LUADATA_OPT_NONE) != 0)
 		return fallback;
 
 	int ret = lua_tointeger(L, -1);
@@ -154,7 +148,7 @@ static T luaxtable_##hook(U skb, V par)					\
 	const luaxtable_info_t *info = (const luaxtable_info_t *)par->huk##info;	\
 	luaxtable_t *xtable = info->data;				\
 									\
-	lunatik_runbh(xtable->runtime, luaxtable_do##hook, ret, xtable, skb, par, luaxtable_hooks.hook##_fallback);	\
+	lunatik_run(xtable->runtime, luaxtable_do##hook, ret, xtable, skb, par, luaxtable_hooks.hook##_fallback);	\
 	return ret;							\
 }
 
@@ -172,7 +166,7 @@ static int luaxtable_##hook##_check(const struct xt_##hk##chk_param *par)	\
 	luaxtable_info_t *info = (luaxtable_info_t *)par->huk##info; 		\
 	info->data = xtable;							\
 										\
-	lunatik_runbh(xtable->runtime, luaxtable_docall, ret, xtable, info, "checkentry", 0, 1);	\
+	lunatik_run(xtable->runtime, luaxtable_docall, ret, xtable, info, "checkentry", 0, 1);	\
 	return ret != 0 ? -EINVAL : 0;						\
 }
 
@@ -183,7 +177,7 @@ static void luaxtable_##hook##_destroy(const struct xt_##hk##dtor_param *par)	\
 	luaxtable_info_t *info = (luaxtable_info_t *)par->huk##info; 		\
 	luaxtable_t *xtable = (luaxtable_t *)info->data;			\
 										\
-	lunatik_runbh(xtable->runtime, luaxtable_docall, ret, xtable, info, "destroy", 0, 0);	\
+	lunatik_run(xtable->runtime, luaxtable_docall, ret, xtable, info, "destroy", 0, 0);	\
 }
 
 LUAXTABLE_HOOK_CB(match, match, const struct  sk_buff *, struct xt_action_param *, bool);
@@ -326,13 +320,13 @@ static inline lunatik_object_t *luaxtable_new(lua_State *L, int idx, int hook)
 
 	xtable->type = hook;
 	xtable->runtime = NULL;
-	luadata_attach(L, xtable, skb);
 	return object;
 }
 
 static inline void luaxtable_register(lua_State *L, int idx, luaxtable_t *xtable, lunatik_object_t *object)
 {
 	lunatik_setruntime(L, xtable, xtable);
+	luadata_attach(L, xtable, skb);
 	lunatik_getobject(xtable->runtime);
 	lunatik_registerobject(L, idx, object);
 }
@@ -384,7 +378,8 @@ static const luaL_Reg luaxtable_lib[] = {
 static void luaxtable_release(void *private)
 {
 	luaxtable_t *xtable = (luaxtable_t *)private;
-	if (!xtable->runtime) 
+	lunatik_object_t *runtime = xtable->runtime;
+	if (runtime == NULL)
 		return;
 
 	switch (xtable->type) {
@@ -396,7 +391,8 @@ static void luaxtable_release(void *private)
 		break;
 	}
 
-	lunatik_putobject(xtable->runtime);
+	luadata_detach(runtime, xtable, skb);
+	lunatik_putobject(runtime);
 	xtable->runtime = NULL;
 }
 
