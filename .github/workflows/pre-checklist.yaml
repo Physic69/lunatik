@@ -1,52 +1,47 @@
-name: Build Modules
+name: PR Checklist Validator
 
 on:
   pull_request:
     branches:
       - master
-  push:
-    branches:
-      - master
 
 jobs:
-  checklist:
-    name: Verify PR Checklist
+  verify-template:
+    name: Verify PR Checkboxes
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Validate PR description
         uses: actions/github-script@v7
         with:
           script: |
             const body = context.payload.pull_request?.body || "";
-            const checklist = [
-              "Did you compile the code successfully",
-              "Did you run the relevant test suite",
-              "Did you manually verify functionality",
-              "Did you follow coding conventions",
-              "Did you run formatting tools",
-              "AI assistance: No / Partial / Full"
+            
+            const requiredChecks = [
+              "- [x] I compiled the code successfully",
+              "- [x] I manually verified",
+              "- [x] I followed the project’s coding conventions",
+              "- [x] I ensured no warnings or errors are introduced"
             ];
-            let missing = checklist.filter(item => !body.includes(item));
-            if (missing.length > 0) {
-              core.setFailed(`PR description missing checklist items: ${missing.join(", ")}`);
+            
+            let missing = requiredChecks.filter(item => !body.includes(item));
+            
+            const aiChecks = [
+              "- [x] No AI assistance was used.",
+              "- [x] AI was used for **partial assistance**",
+              "- [x] AI was used for **full generation**"
+            ];
+            const hasAiCheck = aiChecks.some(item => body.includes(item));
+            
+            if (!hasAiCheck) {
+               missing.push("An AI Usage option must be selected (tick one of the AI checkboxes)");
             }
 
-  build:
-    name: Build ${{ matrix.kernel-version }}
-    needs: checklist   
-    strategy:
-      matrix:
-        kernel-version: [5.15, 6.11]
-      fail-fast: false
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+            const usedAi = body.includes("- [x] AI was used for **partial") || body.includes("- [x] AI was used for **full");
+            if (usedAi && !body.includes("- [x] I reviewed and validated all AI-generated code.")) {
+               missing.push("- [x] I reviewed and validated all AI-generated code. (Required since AI was used)");
+            }
 
-      - name: Build kernel module
-        run: |
-          echo "Building against kernel ${{ matrix.kernel-version }}"
-          # Insert your actual build commands here
+            if (missing.length > 0) {
+              core.setFailed(`PR is missing the following checked items:\n\n${missing.join("\n")}`);
+            }
+
