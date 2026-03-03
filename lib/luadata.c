@@ -12,6 +12,8 @@
 * @module data
 */
 
+
+
 /***
 * Represents a raw block of memory.
 * This is a userdata object returned by `data.new()` or created internally
