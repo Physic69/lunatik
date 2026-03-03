@@ -17,10 +17,10 @@ jobs:
             const body = context.payload.pull_request?.body || "";
             
             const requiredChecks = [
-              "- [x] I compiled the code successfully",
-              "- [x] I manually verified",
-              "- [x] I followed the project’s coding conventions",
-              "- [x] I ensured no warnings or errors are introduced"
+              "- [x] **I confirm** that I compiled the code successfully",
+              "- [x] **I confirm** that I manually verified",
+              "- [x] **I confirm** that I followed the project’s coding conventions",
+              "- [x] **I confirm** that no new warnings or errors are introduced"
             ];
             
             let missing = requiredChecks.filter(item => !body.includes(item));
@@ -37,11 +37,11 @@ jobs:
             }
 
             const usedAi = body.includes("- [x] AI was used for **partial") || body.includes("- [x] AI was used for **full");
-            if (usedAi && !body.includes("- [x] I reviewed and validated all AI-generated code.")) {
-               missing.push("- [x] I reviewed and validated all AI-generated code. (Required since AI was used)");
+            
+            if (usedAi && !body.includes("- [x] I have thoroughly reviewed, understood, and validated all AI-generated code.")) {
+               missing.push("- [x] I have thoroughly reviewed, understood, and validated all AI-generated code. (Required since AI was used)");
             }
 
             if (missing.length > 0) {
               core.setFailed(`PR is missing the following checked items:\n\n${missing.join("\n")}`);
             }
-
