@@ -14,7 +14,8 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const body = context.payload.pull_request?.body || "";
+            let rawBody = context.payload.pull_request?.body || "";
+            const body = rawBody.replace(/-\s*\[\s*[xX]\s*\]/g, "- [x]");
             
             const requiredChecks = [
               "- [x] **I confirm** that I compiled the code successfully",
@@ -30,18 +31,20 @@ jobs:
               "- [x] AI was used for **partial assistance**",
               "- [x] AI was used for **full generation**"
             ];
-            const hasAiCheck = aiChecks.some(item => body.includes(item));
             
-            if (!hasAiCheck) {
-               missing.push("An AI Usage option must be selected (tick one of the AI checkboxes)");
-            }
+            const checkedAiCount = aiChecks.filter(item => body.includes(item)).length;
+            
+            if (checkedAiCount === 0)
+               missing.push("An AI Usage option must be selected (tick exactly one of the AI checkboxes).");
+            else if (checkedAiCount > 1)
+               missing.push("You selected multiple AI Usage options. Please select exactly ONE.");
 
             const usedAi = body.includes("- [x] AI was used for **partial") || body.includes("- [x] AI was used for **full");
             
-            if (usedAi && !body.includes("- [x] I have thoroughly reviewed, understood, and validated all AI-generated code.")) {
+            if (usedAi && !body.includes("- [x] I have thoroughly reviewed, understood, and validated all AI-generated code."))
                missing.push("- [x] I have thoroughly reviewed, understood, and validated all AI-generated code. (Required since AI was used)");
-            }
-
-            if (missing.length > 0) {
-              core.setFailed(`PR is missing the following checked items:\n\n${missing.join("\n")}`);
-            }
+            
+            if (missing.length > 0) 
+              core.setFailed(`PR Checklist Validation Failed!\n\nMissing or invalid items:\n${missing.join("\n")}`);
+            
+      
