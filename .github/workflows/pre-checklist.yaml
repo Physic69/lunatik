@@ -4,7 +4,8 @@ on:
   pull_request:
     branches:
       - master
-
+    types: [opened, edited, synchronize, reopened]
+    
 jobs:
   verify-template:
     name: Verify PR Checkboxes
@@ -15,13 +16,13 @@ jobs:
         with:
           script: |
             let rawBody = context.payload.pull_request?.body || "";
-            const body = rawBody.replace(/-\s*\[\s*[xX]\s*\]/g, "- [x]");
+            const body = rawBody.replace(/-\s*\[[xX]\]/g, "- [x]");
             
             const requiredChecks = [
               "- [x] **I confirm** that I compiled the code successfully",
               "- [x] **I confirm** that I manually verified",
               "- [x] **I confirm** that I followed the project’s coding conventions",
-              "- [x] **I confirm** that no new warnings or errors are introduced"
+              "- [x] **I confirm** that no new warnings or errors are introduced."
             ];
             
             let missing = requiredChecks.filter(item => !body.includes(item));
@@ -47,4 +48,3 @@ jobs:
             if (missing.length > 0) 
               core.setFailed(`PR Checklist Validation Failed!\n\nMissing or invalid items:\n${missing.join("\n")}`);
             
-      
