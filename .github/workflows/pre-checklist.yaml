@@ -1,7 +1,10 @@
-name: PR Checklist
+name: Build Modules
 
 on:
   pull_request:
+    branches:
+      - master
+  push:
     branches:
       - master
 
@@ -17,7 +20,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const body = context.payload.pull_request.body || "";
+            const body = context.payload.pull_request?.body || "";
             const checklist = [
               "Did you compile the code successfully",
               "Did you run the relevant test suite",
@@ -30,3 +33,20 @@ jobs:
             if (missing.length > 0) {
               core.setFailed(`PR description missing checklist items: ${missing.join(", ")}`);
             }
+
+  build:
+    name: Build ${{ matrix.kernel-version }}
+    needs: checklist   
+    strategy:
+      matrix:
+        kernel-version: [5.15, 6.11]
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build kernel module
+        run: |
+          echo "Building against kernel ${{ matrix.kernel-version }}"
+          # Insert your actual build commands here
