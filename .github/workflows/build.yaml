@@ -7,9 +7,47 @@ on:
   push:
     branches:
     - master
+
 jobs:
+  checklist:
+    name: Verify PR Checklist
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR checkboxes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request?.body || "";
+            
+            const requiredChecks = [
+              "- [x] I compiled the code successfully",
+              "- [x] I manually verified",
+              "- [x] I followed the project’s coding conventions",
+              "- [x] I ensured no warnings or errors are introduced"
+            ];
+            
+            let missing = requiredChecks.filter(item => !body.includes(item));
+            
+            const aiChecks = [
+              "- [x] No AI assistance was used.",
+              "- [x] AI was used for **partial assistance**",
+              "- [x] AI was used for **full generation**"
+            ];
+            const hasAiCheck = aiChecks.some(item => body.includes(item));
+            
+            if (!hasAiCheck) {
+               missing.push("An AI Usage option must be selected");
+            }
+
+            if (missing.length > 0) {
+              core.setFailed(`PR missing checked items:\n${missing.join("\n")}`);
+            }
+
   build:
     name: Build ${{ matrix.kernel-version }}
+    needs: checklist
+    if: always() && (needs.checklist.result == 'success' || needs.checklist.result == 'skipped')
     strategy:
       matrix:
         kernel-version: [5.15, 6.11]
