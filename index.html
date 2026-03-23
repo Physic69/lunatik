@@ -35,11 +35,7 @@
   <li><a href="modules/byteorder.html">byteorder</a></li>
   <li><a href="modules/completion.html">completion</a></li>
   <li><a href="modules/cpu.html">cpu</a></li>
-  <li><a href="modules/crypto.aead.html">crypto.aead</a></li>
-  <li><a href="modules/crypto.comp.html">crypto.comp</a></li>
-  <li><a href="modules/crypto.rng.html">crypto.rng</a></li>
-  <li><a href="modules/crypto.shash.html">crypto.shash</a></li>
-  <li><a href="modules/crypto.skcipher.html">crypto.skcipher</a></li>
+  <li><a href="modules/crypto.html">crypto</a></li>
   <li><a href="modules/darken.html">darken</a></li>
   <li><a href="modules/data.html">data</a></li>
   <li><a href="modules/device.html">device</a></li>
@@ -53,6 +49,7 @@
   <li><a href="modules/mailbox.html">mailbox</a></li>
   <li><a href="modules/net.html">net</a></li>
   <li><a href="modules/netfilter.html">netfilter</a></li>
+  <li><a href="modules/skb.html">skb</a></li>
   <li><a href="modules/notifier.html">notifier</a></li>
   <li><a href="modules/probe.html">probe</a></li>
   <li><a href="modules/rcu.html">rcu</a></li>
@@ -65,6 +62,15 @@
   <li><a href="modules/syscall.table.html">syscall.table</a></li>
   <li><a href="modules/thread.html">thread</a></li>
   <li><a href="modules/xdp.html">xdp</a></li>
+</ul>
+<h2>Classes</h2>
+<ul class="nowrap">
+  <li><a href="classes/crypto.hkdf.html">crypto.hkdf</a></li>
+  <li><a href="classes/crypto_aead.html">crypto_aead</a></li>
+  <li><a href="classes/crypto_comp.html">crypto_comp</a></li>
+  <li><a href="classes/crypto_rng.html">crypto_rng</a></li>
+  <li><a href="classes/crypto_shash.html">crypto_shash</a></li>
+  <li><a href="classes/crypto_skcipher.html">crypto_skcipher</a></li>
 </ul>
 <h2>Topics</h2>
 <ul class="">
@@ -90,31 +96,11 @@
 	</tr>
 	<tr>
 		<td class="name"  nowrap><a href="modules/cpu.html">cpu</a></td>
-		<td class="summary">Linux CPU Lua interface.</td>
+		<td class="summary">Lua interface to Linux CPU abstractions.</td>
 	</tr>
 	<tr>
-		<td class="name"  nowrap><a href="modules/crypto.aead.html">crypto.aead</a></td>
-		<td class="summary">AEAD (Authenticated Encryption with Associated Data) operations.</td>
-	</tr>
-	<tr>
-		<td class="name"  nowrap><a href="modules/crypto.comp.html">crypto.comp</a></td>
-		<td class="summary">Low-level Lua interface to the Linux Kernel Crypto API for synchronous
- compression algorithms.</td>
-	</tr>
-	<tr>
-		<td class="name"  nowrap><a href="modules/crypto.rng.html">crypto.rng</a></td>
-		<td class="summary">Low-level Lua interface to the Linux Kernel Crypto API for synchronous
- Random Number Generators (RNG).</td>
-	</tr>
-	<tr>
-		<td class="name"  nowrap><a href="modules/crypto.shash.html">crypto.shash</a></td>
-		<td class="summary">Low-level Lua interface to the Linux Kernel Crypto API for synchronous
- message digest (hash) algorithms, including HMAC.</td>
-	</tr>
-	<tr>
-		<td class="name"  nowrap><a href="modules/crypto.skcipher.html">crypto.skcipher</a></td>
-		<td class="summary">Low-level Lua interface to the Linux Kernel Crypto API for
- symmetric-key ciphers (SKCIPHER).</td>
+		<td class="name"  nowrap><a href="modules/crypto.html">crypto</a></td>
+		<td class="summary">Lua interface to the Linux Crypto API.</td>
 	</tr>
 	<tr>
 		<td class="name"  nowrap><a href="modules/darken.html">darken</a></td>
@@ -138,7 +124,7 @@
 	</tr>
 	<tr>
 		<td class="name"  nowrap><a href="modules/hid.html">hid</a></td>
-		<td class="summary">High-level Lua interface to the Linux HID subsystem.</td>
+		<td class="summary">Lua interface to the Linux HID subsystem.</td>
 	</tr>
 	<tr>
 		<td class="name"  nowrap><a href="modules/lighten.html">lighten</a></td>
@@ -146,7 +132,7 @@
 	</tr>
 	<tr>
 		<td class="name"  nowrap><a href="modules/lunatik.html">lunatik</a></td>
-		<td class="summary">Core Lunatik module.</td>
+		<td class="summary">Manages Lunatik runtimes — isolated Lua states running in the kernel.</td>
 	</tr>
 	<tr>
 		<td class="name"  nowrap><a href="modules/lunatik.runner.html">lunatik.runner</a></td>
@@ -167,6 +153,10 @@
 	<tr>
 		<td class="name"  nowrap><a href="modules/netfilter.html">netfilter</a></td>
 		<td class="summary">Low-level Lua interface to the Linux Kernel Netfilter framework.</td>
+	</tr>
+	<tr>
+		<td class="name"  nowrap><a href="modules/skb.html">skb</a></td>
+		<td class="summary">Linux socket buffer interface.</td>
 	</tr>
 	<tr>
 		<td class="name"  nowrap><a href="modules/notifier.html">notifier</a></td>
@@ -217,6 +207,33 @@
 		<td class="summary">eXpress Data Path (XDP) integration.</td>
 	</tr>
 </table>
+<h2>Classes</h2>
+<table class="module_list">
+	<tr>
+		<td class="name"  nowrap><a href="classes/crypto.hkdf.html">crypto.hkdf</a></td>
+		<td class="summary">HMAC-based Extract-and-Expand Key Derivation Function (HKDF) based on RFC 5869.</td>
+	</tr>
+	<tr>
+		<td class="name"  nowrap><a href="classes/crypto_aead.html">crypto_aead</a></td>
+		<td class="summary">Lua interface to AEAD (Authenticated Encryption with Associated Data) ciphers.</td>
+	</tr>
+	<tr>
+		<td class="name"  nowrap><a href="classes/crypto_comp.html">crypto_comp</a></td>
+		<td class="summary">Lua interface to synchronous compression algorithms.</td>
+	</tr>
+	<tr>
+		<td class="name"  nowrap><a href="classes/crypto_rng.html">crypto_rng</a></td>
+		<td class="summary">Lua interface to synchronous Random Number Generators (RNG).</td>
+	</tr>
+	<tr>
+		<td class="name"  nowrap><a href="classes/crypto_shash.html">crypto_shash</a></td>
+		<td class="summary">Lua interface to synchronous message digest (hash) algorithms, including HMAC.</td>
+	</tr>
+	<tr>
+		<td class="name"  nowrap><a href="classes/crypto_skcipher.html">crypto_skcipher</a></td>
+		<td class="summary">Lua interface to symmetric-key ciphers (SKCIPHER).</td>
+	</tr>
+</table>
 <h2>Topics</h2>
 <table class="module_list">
 	<tr>
@@ -229,7 +246,7 @@
 </div> <!-- id="main" -->
 <div id="about">
 <i>generated by <a href="http://github.com/lunarmodules/LDoc">LDoc 1.5.0</a></i>
-<i style="float:right;">Last updated 2026-03-03 22:04:25 </i>
+<i style="float:right;">Last updated 2026-03-23 09:15:22 </i>
 </div> <!-- id="about" -->
 </div> <!-- id="container" -->
 </body>
