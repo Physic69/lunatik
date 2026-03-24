@@ -68,10 +68,10 @@ int lunatik_loadfile(lua_State *L, const char *filename, const char *mode);
 #define LUA_ROOT	"/lib/modules/lua/"
 
 #undef LUA_PATH_DEFAULT
-#define LUA_PATH_DEFAULT  LUA_ROOT"?.lua;" LUA_ROOT"?/init.lua"
+#define LUA_PATH_DEFAULT	LUA_ROOT"?.lua;" LUA_ROOT"?/init.lua"
 
 #undef LUAI_MAXSTACK
-#define LUAI_MAXSTACK  200
+#define LUAI_MAXSTACK		200
 
 #ifdef LUNATIK_RUNTIME
 unsigned int luaS_hash(const char *str, size_t l, unsigned int seed); /* required by luarcu */

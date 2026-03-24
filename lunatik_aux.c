@@ -69,14 +69,14 @@ EXPORT_SYMBOL(lunatik_loadfile);
 
 void lunatik_pusherrname(lua_State *L, int err)
 {
-    err = abs(err);
+	err = abs(err);
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 7, 0)
-    const char *name = errname(err);
-    lua_pushstring(L, name ? name : "unknown");
+	const char *name = errname(err);
+	lua_pushstring(L, name ? name : "unknown");
 #else
-    char buf[LUAL_BUFFERSIZE];
-    snprintf(buf, sizeof(buf), "%pE", ERR_PTR(-err));
-    lua_pushstring(L, buf);
+	char buf[LUAL_BUFFERSIZE];
+	snprintf(buf, sizeof(buf), "%pE", ERR_PTR(-err));
+	lua_pushstring(L, buf);
 #endif
 }
 EXPORT_SYMBOL(lunatik_pusherrname);

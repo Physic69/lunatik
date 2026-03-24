@@ -57,7 +57,7 @@ static int luanotifier_netdevice_handler(lua_State *L, void *data)
 	return 1;
 }
 
-static int luanotifier_vt_handler (lua_State* L, void* data)
+static int luanotifier_vt_handler(lua_State *L, void *data)
 {
 	struct vt_notifier_param* param = data;
 

@@ -295,9 +295,9 @@ static const lunatik_reg_t lualinux_stat[] = {
 */
 static int lualinux_errname(lua_State *L)
 {
-    int e = (int)luaL_checkinteger(L, 1);
-    lunatik_pusherrname(L, e);
-    return 1;
+	int e = (int)luaL_checkinteger(L, 1);
+	lunatik_pusherrname(L, e);
+	return 1;
 }
 
 static const lunatik_namespace_t lualinux_flags[] = {
